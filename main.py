@@ -31,11 +31,11 @@ def main() -> int:
     train_ds = EmotionDataset(train_X, train_y)
     test_ds = EmotionDataset(test_X, test_y)
 
-    train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
-    test_loader = DataLoader(test_ds, batch_size=32, shuffle=True)
+    train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=64, shuffle=True)
 
     model = Transformer(seq_len=seq_len).to(mps)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     criterion = nn.BCEWithLogitsLoss()
 
     print("Starting training...")
