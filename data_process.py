@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from consts import JOINT_IDS
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
@@ -43,7 +44,7 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
 
     # scale body parts against the distance between the shoulders
     shoulder_width = joints[:, JOINT_IDS["RShoulder"], :] - joints[:, JOINT_IDS["LShoulder"], :]
-    scale = np.linalg.norm(shoulder_width, axis=1)
+    scale = np.linalg.norm(shoulder_width, axis=1, keepdims=True)
     scale = np.maximum(scale, 1e-6)
     joints /= scale[:, None, :] # divide all joints by the shoulder width
 
