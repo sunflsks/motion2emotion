@@ -37,7 +37,6 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     # kill for now # joints[joints[:, :, 2] < CONFIDENCE_THRESHOLD] = 0 # no change to shape, mask set joints with low confidence to 0
     joints = joints[:, :, :2] # 18x3 -> 18x2, kill confidence column
 
-    '''
     # normalize joint positions against the hips
     center = (joints[:, JOINT_IDS["RHip"], :] + joints[:, JOINT_IDS["LHip"], :]) / 2 # "center" of body
     joints -= center[:, np.newaxis, :] # subtract center from all joints
@@ -45,9 +44,8 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     # scale body parts against the distance between the shoulders
     shoulder_width = joints[:, JOINT_IDS["RShoulder"], :] - joints[:, JOINT_IDS["LShoulder"], :]
     scale = np.linalg.norm(shoulder_width, axis=1)
-    print(f"scale: {scale.shape}")
-    joints /= scale[:, None, None] # divide all joints by the shoulder width
-    '''
+    scale = np.maximum(scale, 1e-6)
+    joints /= scale[:, None, :] # divide all joints by the shoulder width
 
     '''
     # interpolate joints to 64 frames
@@ -57,9 +55,7 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     '''
 
     pose_resampled = joints
-
     pose_resampled = pose_resampled.reshape(-1, 36) # 18x2 -> 36
-
     return pose_resampled
 
 def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
