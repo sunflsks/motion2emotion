@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ from sklearn.model_selection import train_test_split
 prefix = None # prefix - initialized my load_csv
 
 def is_valid_array(array: np.ndarray) -> bool:
-    return array is not None and not np.isnan(array).any() and not np.isinf(array).any()
+    return (array is not None) and (not np.isnan(array).any()) and (not np.isinf(array).any()) and (array.size > 0)
 
 def load_csv(path: str) -> (pd.DataFrame, pd.DataFrame): # returns train and test dataframes, (train, test)
     global prefix
@@ -69,9 +70,8 @@ def get_X_y(df: pd.DataFrame, cache=True) -> (torch.Tensor, torch.Tensor):
     X = torch.nn.utils.rnn.pad_sequence(
             [torch.from_numpy(process_joints(get_joints_for_row(row))) for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))],
             batch_first=True,
-            padding_value=-torch.inf
-        )
-
+            padding_value=0.0
+    )
     X = X[:, :512, :] # truncate, just for now.
     y = torch.tensor(np.array([get_emotions_for_row(row)[0] for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))], dtype=np.float32))
 
