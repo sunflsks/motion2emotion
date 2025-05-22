@@ -72,7 +72,7 @@ def get_X_y(df: pd.DataFrame, cache=True) -> (torch.Tensor, torch.Tensor):
             padding_value=-torch.inf
         )
 
-    # X = X[:, :256, :] # truncate, just for now.
+    X = X[:, :512, :] # truncate, just for now.
     y = torch.tensor(np.array([get_emotions_for_row(row)[0] for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))], dtype=np.float32))
 
     return (X, y)

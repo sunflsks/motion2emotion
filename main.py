@@ -58,7 +58,6 @@ def main() -> int:
             inputs, targets = batch
 
             mask = (inputs == -torch.inf).all(dim=2)
-            print(mask)
 
             optimizer.zero_grad()
             outputs = model(inputs, mask=mask)
@@ -75,6 +74,7 @@ def main() -> int:
                     print(f"ACTUAL: {targets[sequence][i]}. PREDICTED: {sigmoid(outputs[sequence][i])}.")
             end testing '''
 
+            print(inputs)
             total_loss += loss.item()
             num_batches += 1
 
