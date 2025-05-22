@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from contextlib import contextmanager
 
 def sigmoid(logit: int):
     return (1 / (1 + math.exp(-logit)))
@@ -32,3 +33,16 @@ def frame_to_image(prefix: str, processed: bool, batch: int, frames: np.ndarray)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         img.save(path)
         count += 1
+
+# Following snippet is licensed under MIT license
+
+@contextmanager
+def evaluating_model(model):
+    '''Temporarily switch to evaluation mode.'''
+    istrain = model.training
+    try:
+        model.eval()
+        yield model
+    finally:
+        if istrain:
+            model.train()

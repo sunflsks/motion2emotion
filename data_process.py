@@ -12,11 +12,13 @@ prefix = None # prefix - initialized my load_csv
 def is_valid_array(array: np.ndarray) -> bool:
     return (array is not None) and (not np.isnan(array).any()) and (not np.isinf(array).any()) and (array.size > 0)
 
-def load_csv(path: str) -> (pd.DataFrame, pd.DataFrame): # returns train and test dataframes, (train, test)
+def load_csv(path: str) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame): # returns train and test dataframes, (train, test)
     global prefix
     prefix = path
     df = pd.read_csv(prefix + 'annotations/train.csv')
-    return train_test_split(df, test_size=0.2, random_state=42)
+    (train_df, test_df) = train_test_split(df, test_size=0.2, random_state=42)
+    (test_df, validate_df) = train_test_split(test_df, test_size=0.5, random_state=42)
+    return (train_df, test_df, validate_df)
 
 def get_joints_for_row(row: pd.Series) -> np.ndarray:
     """ get row joints from given dataframe row"""
