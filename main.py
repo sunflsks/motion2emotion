@@ -9,7 +9,7 @@ from model import Transformer
 from data_process import load_csv, get_X_y, EmotionDataset
 from torch.utils.data import DataLoader
 
-mps = torch.device("cpu")
+mps = torch.device("cuda")
 
 def main() -> int:
     if len(sys.argv) < 2:
@@ -72,7 +72,7 @@ def main() -> int:
             total_loss += loss.item()
             num_batches += 1
 
-        print(f"Epoch {epoch+1}/{100}, Loss: {total_loss/num_batches:.4f}. Completed in {time() - start_epoch_time} seconds. F1 score is {f1}")
+        print(f"Epoch {epoch+1}/{100}, Loss: {total_loss/num_batches:.4f}. Completed in {time() - start_epoch_time} seconds.")
 
     print(f"Training complete. Completed in {time() - start_train_time} seconds.")
 
