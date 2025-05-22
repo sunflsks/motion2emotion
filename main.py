@@ -2,6 +2,7 @@
 
 import sys
 import torch
+import platform
 import numpy as np
 from torch import nn
 from time import time
@@ -9,7 +10,11 @@ from model import Transformer
 from data_process import load_csv, get_X_y, EmotionDataset
 from torch.utils.data import DataLoader
 
-mps = torch.device("cuda")
+device = torch.device("cpu")
+if platform.system() == "Darwin":
+    device = torch.device("mps")
+elif platform.system() == "Linux":
+    device = torch.device("cuda")
 
 def main() -> int:
     if len(sys.argv) < 2:
@@ -34,7 +39,7 @@ def main() -> int:
     train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
     test_loader = DataLoader(test_ds, batch_size=64, shuffle=True)
 
-    model = Transformer(seq_len=seq_len).to(mps)
+    model = nn.DataParallel(Transformer(seq_len=seq_len).to(device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     criterion = nn.BCEWithLogitsLoss()
 
@@ -49,10 +54,11 @@ def main() -> int:
         all_targets = []
 
         for batch in train_loader:
-            batch = [x.to(mps) for x in batch]
+            batch = [x.to(device) for x in batch]
             inputs, targets = batch
 
-            mask = (inputs == 0).all(dim=2)
+            mask = (inputs == -torch.inf).all(dim=2)
+            print(mask)
 
             optimizer.zero_grad()
             outputs = model(inputs, mask=mask)
@@ -84,7 +90,7 @@ def main() -> int:
     model.eval()
     with torch.no_grad():
         for batch in test_loader:
-            batch = [x.to(mps) for x in batch]
+            batch = [x.to(device) for x in batch]
             inputs, targets = batch
             assert not torch.isnan(inputs).any()
             assert not torch.isnan(targets).any()

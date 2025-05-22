@@ -68,7 +68,8 @@ def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
 def get_X_y(df: pd.DataFrame, cache=True) -> (torch.Tensor, torch.Tensor):
     X = torch.nn.utils.rnn.pad_sequence(
             [torch.from_numpy(process_joints(get_joints_for_row(row))) for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))],
-            batch_first=True
+            batch_first=True,
+            padding_value=-torch.inf
         )
 
     # X = X[:, :256, :] # truncate, just for now.
