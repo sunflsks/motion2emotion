@@ -46,7 +46,11 @@ def main() -> int:
 
     model = nn.DataParallel(Transformer(seq_len=seq_len).to(device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
-    criterion = nn.BCEWithLogitsLoss()
+
+    class_weights = 1.0 / (train_y.sum(dim=0) + 1e-6)
+    class_weights /= class_weights.sum()
+
+    criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights.to(device))
 
     print("Starting training...")
     start_train_time = time()
