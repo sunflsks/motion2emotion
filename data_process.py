@@ -106,7 +106,7 @@ def get_X_y(df: pd.DataFrame, cache=True, spoof=False) -> (torch.Tensor, torch.T
         processed = process_joints(joints)
         if not is_valid_array(processed):
             continue
-        X_unpadded.append(torch.tensor(processed))
+        X_unpadded.append(torch.tensor(processed)) # MPS things.
 
     X = torch.nn.utils.rnn.pad_sequence(
             X_unpadded,
