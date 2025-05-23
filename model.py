@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 class Transformer(nn.Module):
-    def __init__(self, input_dim=36, d_model=192, seq_len=64, num_heads=3, num_layers=6, dim_feedforward=256, output_dim=26):
+    def __init__(self, input_dim=12, d_model=192, seq_len=64, num_heads=3, num_layers=6, dim_feedforward=256, output_dim=26):
         super().__init__()
 
         # projects raw coordinates into the model's vector space (linear projection)
@@ -23,8 +23,8 @@ class Transformer(nn.Module):
 
         # the magic
         self.encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, 
-            nhead=num_heads, 
+            d_model=d_model,
+            nhead=num_heads,
             batch_first=True,
             dim_feedforward=dim_feedforward
         )

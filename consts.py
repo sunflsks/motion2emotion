@@ -19,5 +19,14 @@ JOINT_IDS = {
     "LEar": 17,
 }
 
+RELIABLE_JOINTS = {
+    "Nose" : 0,
+    "Neck" : 1,
+    "RShoulder" : 2,
+    "LShoulder" : 5,
+    "REye" : 14,
+    "LEye" : 15
+}
+
 CONFIDENCE_THRESHOLD = 0.25
 TARGET_LEN = 64 # target length of frames per sequence

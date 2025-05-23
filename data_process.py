@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from consts import JOINT_IDS
+from consts import JOINT_IDS, RELIABLE_JOINTS
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
@@ -32,13 +32,13 @@ def get_joints_for_row(row: pd.Series) -> np.ndarray:
 
     return np.load(full_path)
 
+    '''
 def process_joints(raw: np.ndarray) -> np.ndarray:
     joints = raw[:, 2:].reshape(-1, 18, 3) # 54 -> 18x3, where each joint has (x, y, confidence)
 
     # kill for now # joints[joints[:, :, 2] < CONFIDENCE_THRESHOLD] = 0 # no change to shape, mask set joints with low confidence to 0
     joints = joints[:, :, :2] # 18x3 -> 18x2, kill confidence column
 
-    '''
     # normalize joint positions against the hips
     center = (joints[:, JOINT_IDS["RHip"], :] + joints[:, JOINT_IDS["LHip"], :]) / 2 # "center" of body
     joints -= center[:, np.newaxis, :] # subtract center from all joints
@@ -53,13 +53,11 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     original_time = np.linspace(0, 1, joints.shape[0])
     new_time = np.linspace(0, 1, TARGET_LEN)
     pose_resampled = scipy.interpolate.interp1d(original_time, joints, axis=0, kind="linear")(new_time)
-    '''
 
     pose_resampled = joints
     pose_resampled = pose_resampled.reshape(-1, 36) # 18x2 -> 36
     return pose_resampled
 
-'''
 def process_joints(raw: np.ndarray) -> np.ndarray:
     joints = raw[:, 2:].copy().reshape(-1, 18, 3)
     joints = joints[:, :, :2].reshape(-1, 18, 2)
@@ -78,6 +76,20 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     return joints.reshape(-1, 36)
 '''
 
+def process_joints(raw: np.ndarray) -> np.ndarray:
+    joints = raw[:, 2:].reshape(-1, 18, 3)
+
+    good_indices = list(RELIABLE_JOINTS.values())
+    reliable_data = joints[:, good_indices, :]
+
+    confidences = reliable_data[:, :, 2]
+    if np.any(confidences < 0.7):
+        # skip
+        return None
+
+    positions = reliable_data[:, :, :2]
+    return positions.reshape(-1, len(RELIABLE_JOINTS) * 2)
+
 
 def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
     """ get row emotions from given dataframe row"""
@@ -86,13 +98,21 @@ def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
     return (emotions, emotional_characteristics)
 
 def get_X_y(df: pd.DataFrame, cache=True, spoof=False) -> (torch.Tensor, torch.Tensor):
+    X_unpadded = []
+    for _, row in df.iterrows():
+        joints = get_joints_for_row(row)
+        if not is_valid_array(joints):
+            continue
+        processed = process_joints(joints)
+        if not is_valid_array(processed):
+            continue
+        X_unpadded.append(torch.tensor(processed))
+
     X = torch.nn.utils.rnn.pad_sequence(
-            [torch.from_numpy(process_joints(get_joints_for_row(row))) for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))],
+            X_unpadded,
             batch_first=True,
             padding_value=0.0
     )
-<<<<<<< Updated upstream
-
     if spoof:
         X = torch.rand(X.shape) * 500
         print(X)
