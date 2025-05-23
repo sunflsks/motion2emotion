@@ -38,6 +38,7 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     # kill for now # joints[joints[:, :, 2] < CONFIDENCE_THRESHOLD] = 0 # no change to shape, mask set joints with low confidence to 0
     joints = joints[:, :, :2] # 18x3 -> 18x2, kill confidence column
 
+    '''
     # normalize joint positions against the hips
     center = (joints[:, JOINT_IDS["RHip"], :] + joints[:, JOINT_IDS["LHip"], :]) / 2 # "center" of body
     joints -= center[:, np.newaxis, :] # subtract center from all joints
@@ -48,7 +49,6 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     scale = np.maximum(scale, 1e-6)
     joints /= scale[:, None, :] # divide all joints by the shoulder width
 
-    '''
     # interpolate joints to 64 frames
     original_time = np.linspace(0, 1, joints.shape[0])
     new_time = np.linspace(0, 1, TARGET_LEN)
@@ -58,6 +58,26 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
     pose_resampled = joints
     pose_resampled = pose_resampled.reshape(-1, 36) # 18x2 -> 36
     return pose_resampled
+
+'''
+def process_joints(raw: np.ndarray) -> np.ndarray:
+    joints = raw[:, 2:].copy().reshape(-1, 18, 3)
+    joints = joints[:, :, :2].reshape(-1, 18, 2)
+
+    x_coords = joints[:, :, 0]
+    y_coords = joints[:, :, 1]
+
+    x_min = x_coords[x_coords > 0].min() if (x_coords > 0).any() else 0
+    y_min = y_coords[y_coords > 0].min() if (y_coords > 0).any() else 0
+    x_max = x_coords[x_coords > 0].max()
+    y_max = y_coords[y_coords > 0].max()
+
+    joints[:, :, 0] = (x_coords - x_min) / (x_max - x_min + 1e-6)
+    joints[:, :, 1] = (y_coords - y_min) / (y_max - y_min + 1e-6)
+
+    return joints.reshape(-1, 36)
+'''
+
 
 def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
     """ get row emotions from given dataframe row"""
@@ -71,12 +91,13 @@ def get_X_y(df: pd.DataFrame, cache=True, spoof=False) -> (torch.Tensor, torch.T
             batch_first=True,
             padding_value=0.0
     )
+<<<<<<< Updated upstream
 
     if spoof:
         X = torch.rand(X.shape) * 500
         print(X)
 
-    X = X[:, :512, :] # truncate, just for now.
+    X = X[:, :120, :] # truncate, just for now.
     y = torch.tensor(np.array([get_emotions_for_row(row)[0] for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))], dtype=np.float32))
 
     return (X, y)
