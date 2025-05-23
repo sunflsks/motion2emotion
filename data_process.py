@@ -65,12 +65,17 @@ def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
     emotional_characteristics = row[30:33].to_numpy() # valence, arousal, dominance
     return (emotions, emotional_characteristics)
 
-def get_X_y(df: pd.DataFrame, cache=True) -> (torch.Tensor, torch.Tensor):
+def get_X_y(df: pd.DataFrame, cache=True, spoof=False) -> (torch.Tensor, torch.Tensor):
     X = torch.nn.utils.rnn.pad_sequence(
             [torch.from_numpy(process_joints(get_joints_for_row(row))) for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))],
             batch_first=True,
             padding_value=0.0
     )
+
+    if spoof:
+        X = torch.rand(X.shape) * 500
+        print(X)
+
     X = X[:, :512, :] # truncate, just for now.
     y = torch.tensor(np.array([get_emotions_for_row(row)[0] for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))], dtype=np.float32))
 

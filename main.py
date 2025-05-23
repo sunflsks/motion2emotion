@@ -26,9 +26,9 @@ def main() -> int:
 
     (train_df, test_df, validate_df) = load_csv(path)
 
-    train_X, train_y = get_X_y(train_df)
-    test_X, test_y = get_X_y(test_df)
-    validate_X, validate_y = get_X_y(validate_df)
+    train_X, train_y = get_X_y(train_df, spoof=True)
+    test_X, test_y = get_X_y(test_df, spoof=True)
+    validate_X, validate_y = get_X_y(validate_df, spoof=True)
 
     assert not np.isnan(train_X).any(), "X contains NaN values"
     assert not np.isnan(test_X).any(), "X contains NaN values"
@@ -84,6 +84,9 @@ def main() -> int:
                 batch = [x.to(device) for x in batch]
                 inputs, targets = batch
                 mask = (inputs == 0).all(dim=2)
+
+                sample_outputs = model(inputs[:15], mask=mask[:15])
+                print(f"Output std. dev: {sample_outputs.std(dim=0)}")
 
                 outputs = model(inputs, mask=mask)
                 loss = criterion(outputs, targets)
