@@ -1,8 +1,9 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class Transformer(nn.Module):
-    def __init__(self, input_dim=36, d_model=192, seq_len=64, num_heads=3, num_layers=6, dim_feedforward=256, output_dim=26):
+    def __init__(self, input_dim=12, d_model=192, seq_len=64, num_heads=3, num_layers=6, dim_feedforward=256, output_dim=26):
         super().__init__()
 
         # projects raw coordinates into the model's vector space (linear projection)

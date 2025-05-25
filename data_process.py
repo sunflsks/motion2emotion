@@ -79,18 +79,16 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
 def process_joints(raw: np.ndarray) -> np.ndarray:
     joints = raw[:, 2:].reshape(-1, 18, 3)
 
-    # good_indices = list(RELIABLE_JOINTS.values())
-    # reliable_data = joints[:, good_indices, :]
-    reliable_data = joints
+    good_indices = list(RELIABLE_JOINTS.values())
+    reliable_data = joints[:, good_indices, :]
 
-    #confidences = reliable_data[:, :, 2]
-    #if np.any(confidences < 0.7):
+    confidences = reliable_data[:, :, 2]
+    if np.any(confidences < 0.7):
         # skip
-    #    return None
+        return None
 
     positions = reliable_data[:, :, :2]
-    # return positions.reshape(-1, len(RELIABLE_JOINTS) * 2)
-    return positions.reshape(-1, 18*2)
+    return positions.reshape(-1, len(RELIABLE_JOINTS) * 2)
 
 
 def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):
@@ -108,7 +106,7 @@ def get_X_y(df: pd.DataFrame, cache=True, spoof=False) -> (torch.Tensor, torch.T
         processed = process_joints(joints)
         if not is_valid_array(processed):
             continue
-        X_unpadded.append(torch.tensor(processed)) # MPS things.
+        X_unpadded.append(torch.tensor(processed))
 
     X = torch.nn.utils.rnn.pad_sequence(
             X_unpadded,
@@ -117,7 +115,6 @@ def get_X_y(df: pd.DataFrame, cache=True, spoof=False) -> (torch.Tensor, torch.T
     )
     if spoof:
         X = torch.rand(X.shape) * 500
-        print(X)
 
     X = X[:, :120, :] # truncate, just for now.
     y = torch.tensor(np.array([get_emotions_for_row(row)[0] for _, row in df.iterrows() if is_valid_array(get_joints_for_row(row))], dtype=np.float32))

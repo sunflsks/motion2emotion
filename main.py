@@ -52,10 +52,13 @@ def main() -> int:
     model = nn.DataParallel(Transformer(seq_len=seq_len))
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 
-    class_weights = 1.0 / (train_y.sum(dim=0) + 1e-6)
-    class_weights /= class_weights.sum()
+    train_y_classified = (train_y > CONFIDENCE_THRESHOLD)
+    pos_weight = (~train_y_classified.bool()).sum(0) / train_y_classified.bool().sum(0)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
-    criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
+    positive_rates = train_y.mean(0)
+    print(f"Positive rates per class: {positive_rates}")
+    print("pos_weight values:", pos_weight)
 
     print("Starting training...")
 
@@ -65,7 +68,7 @@ def main() -> int:
     patience_counter = 0
     epoch = 0
 
-    while not stop:
+    for i in range(3000):
         start_epoch_time = time()
         total_loss = 0.0
         num_batches = 0
@@ -128,8 +131,8 @@ def main() -> int:
     total_loss = 0
     batch_cnt = 0
 
-    true_positives = np.zeroes(26)
-    false_positives = np.zeroes(26)
+    all_outputs = []
+    all_targets = []
 
     with evaluating_model(model), torch.no_grad():
         for batch in test_loader:
@@ -144,11 +147,14 @@ def main() -> int:
             total_loss += loss.item()
             batch_cnt += 1
 
+            all_outputs.append(torch.sigmoid(outputs))
+            all_targets.append(targets)
 
-    print(f"FINAL TESTING LOSS: {total_loss/batch_cnt:.4f}. ")
+        all_outputs = torch.cat(all_outputs, dim=0)
+        all_targets = torch.cat(all_targets, dim=0)
 
-
-    correct = 0
+        mAP, mROCAUC = mAP_and_mROCAUC(all_outputs.numpy(), all_targets.numpy())
+        print(f"FINAL TESTING LOSS: {total_loss/batch_cnt:.4f}. mAP is {mAP}")
 
 if __name__ == "__main__":
     sys.exit(main())
