@@ -45,9 +45,9 @@ def main() -> int:
     test_ds = EmotionDataset(test_X, test_y)
     validate_ds = EmotionDataset(validate_X, validate_y)
 
-    train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_ds, batch_size=64, shuffle=True)
-    validate_loader = DataLoader(validate_ds, batch_size=64, shuffle=True)
+    train_loader = DataLoader(train_ds, batch_size=64, shuffle=True, generator=torch.Generator(device=torch.get_default_device()))
+    test_loader = DataLoader(test_ds, batch_size=64, shuffle=True, generator=torch.Generator(device=torch.get_default_device()))
+    validate_loader = DataLoader(validate_ds, batch_size=64, shuffle=True, generator=torch.Generator(device=torch.get_default_device()))
 
     model = nn.DataParallel(Transformer(seq_len=seq_len))
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
