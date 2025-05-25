@@ -79,16 +79,18 @@ def process_joints(raw: np.ndarray) -> np.ndarray:
 def process_joints(raw: np.ndarray) -> np.ndarray:
     joints = raw[:, 2:].reshape(-1, 18, 3)
 
-    good_indices = list(RELIABLE_JOINTS.values())
-    reliable_data = joints[:, good_indices, :]
+    # good_indices = list(RELIABLE_JOINTS.values())
+    # reliable_data = joints[:, good_indices, :]
+    reliable_data = joints
 
-    confidences = reliable_data[:, :, 2]
-    if np.any(confidences < 0.7):
+    #confidences = reliable_data[:, :, 2]
+    #if np.any(confidences < 0.7):
         # skip
-        return None
+    #    return None
 
     positions = reliable_data[:, :, :2]
-    return positions.reshape(-1, len(RELIABLE_JOINTS) * 2)
+    # return positions.reshape(-1, len(RELIABLE_JOINTS) * 2)
+    return positions.reshape(-1, 18*2)
 
 
 def get_emotions_for_row(row: pd.Series) -> (np.ndarray, np.ndarray):

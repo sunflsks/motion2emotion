@@ -29,5 +29,5 @@ RELIABLE_JOINTS = {
 }
 
 PATIENCE = 5
-CONFIDENCE_THRESHOLD = 0.25
+CONFIDENCE_THRESHOLD = 0.5
 TARGET_LEN = 64 # target length of frames per sequence

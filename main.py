@@ -9,8 +9,9 @@ from time import time
 from model import Transformer
 from utils import evaluating_model
 from data_process import load_csv, get_X_y, EmotionDataset, get_joints_for_row, process_joints
-from consts import JOINT_IDS, PATIENCE
+from consts import JOINT_IDS, PATIENCE, CONFIDENCE_THRESHOLD
 from torch.utils.data import DataLoader
+from statistics import mAP_and_mROCAUC
 
 def init_torch():
     device = torch.device("cpu")
@@ -83,7 +84,9 @@ def main() -> int:
             total_loss += loss.item()
             num_batches += 1
 
-        # validate model
+        # validation
+        all_outputs = []
+        all_targets = []
         with evaluating_model(model), torch.no_grad():
             for batch in validate_loader:
                 inputs, targets = batch
@@ -91,12 +94,15 @@ def main() -> int:
 
                 rinput = torch.randn_like(inputs)
 
-                outputs = model(inputs, mask=mask)
-                routputs = model(rinput)
+                logits = model(inputs, mask=mask)
+                rlogits = model(rinput)
 
-                loss = criterion(outputs, targets)
-                rloss = criterion(routputs, targets)
+                loss = criterion(logits, targets)
+                rloss = criterion(rlogits, targets)
                 validation_loss = loss.item()
+
+                all_outputs.append(torch.sigmoid(logits))
+                all_targets.append(targets)
 
         if validation_loss < least_validation_loss:
             least_validation_loss = validation_loss
@@ -106,7 +112,12 @@ def main() -> int:
         if patience_counter > PATIENCE:
             stop = True
 
-        print(f"Epoch {epoch+1}. Loss: {total_loss/num_batches:.4f}. Completed in {time() - start_epoch_time} seconds, with a validation loss of {validation_loss}. Real/Rand ratio is currently {rloss/validation_loss:.2f}")
+        all_outputs = torch.cat(all_outputs, dim=0)
+        all_targets = torch.cat(all_targets, dim=0)
+
+        mAP, mROCAUC = mAP_and_mROCAUC(all_outputs.numpy(), all_targets.numpy())
+
+        print(f"Epoch {epoch+1}. Loss: {total_loss/num_batches:.4f}. Completed in {time() - start_epoch_time} seconds, with a validation loss of {validation_loss}. Real/Rand ratio is currently {rloss/validation_loss:.2f}. For validation set -- (mAP: {mAP}, mROCAUC: {mROCAUC}")
 
         epoch += 1
 
@@ -117,6 +128,9 @@ def main() -> int:
     total_loss = 0
     batch_cnt = 0
 
+    true_positives = np.zeroes(26)
+    false_positives = np.zeroes(26)
+
     with evaluating_model(model), torch.no_grad():
         for batch in test_loader:
             inputs, targets = batch
@@ -125,11 +139,13 @@ def main() -> int:
 
             mask = (inputs == 0).all(dim=2)
             outputs = model(inputs, mask=mask)
+
             loss = criterion(outputs, targets)
             total_loss += loss.item()
             batch_cnt += 1
 
-    print(f"FINAL TESTING LOSS: {total_loss/batch_cnt:.4f}")
+
+    print(f"FINAL TESTING LOSS: {total_loss/batch_cnt:.4f}. ")
 
 
     correct = 0
